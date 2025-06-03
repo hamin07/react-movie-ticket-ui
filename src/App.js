@@ -1,25 +1,28 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+import Header from "./components/Header";
+
+import HomePage from "./pages/HomePage";
+import TicketCompose from "./pages/TicketCompose";
+
+export default function App() {
+    return (
+        <div>
+            <BrowserRouter basename={process.env.PUBLIC_URL}>
+                <header>
+                    <Header />      
+                </header>
+                <main className="max-w-5xl mx-auto">
+                    <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/ticket-compose" element={<TicketCompose />} />
+                    </Routes>        
+                </main>
+                <footer>
+
+                </footer>
+            </BrowserRouter>
+        </div>
+    );
 }
-
-export default App;
