@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
 
 import HomePage from "./pages/HomePage";
-import TicketCompose from "./pages/TicketCompose";
+import MovieList from "./pages/MovieList";
 
 export default function App() {
     return (
@@ -16,7 +16,7 @@ export default function App() {
                 <main className="max-w-5xl mx-auto">
                     <Routes>
                         <Route path="/" element={<HomePage />} />
-                        <Route path="/ticket-compose" element={<TicketCompose />} />
+                        <Route path="/ticket-compose" element={<MovieList />} />
                     </Routes>        
                 </main>
                 <footer>
