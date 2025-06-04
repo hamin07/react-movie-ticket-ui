@@ -18,9 +18,9 @@ export default function App() {
                 <main className="max-w-5xl mx-auto">
                     <Routes>
                         <Route path="/" element={<HomePage />} />
-                        <Route path="/ticket-compose" element={<MovieList />} />
+                        <Route path="/movie-list" element={<MovieList />} />
                         <Route path="/asd" element={<BoxOffice />} />
-                    </Routes>        
+                    </Routes>
                 </main>
                 <footer>
 

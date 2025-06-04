@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function HomePage() {
@@ -7,7 +8,7 @@ export default function HomePage() {
         {
             title: "티켓 구매",
             img: "🎫",
-            loc: "/ticket-compose"
+            loc: "/movie-list"
         },
         {
             title: "예매티켓출력",
@@ -25,6 +26,28 @@ export default function HomePage() {
         "rounded-full", "font-medium", "opacity-0", "group-hover:opacity-100", "transition-all", "duration-300", 
         "transform", "translate-y-2", "group-hover:translate-y-0", "hover:from-blue-600", "hover:to-indigo-700"
     ].join(" ");
+
+    useEffect(() => {
+        async function f() {
+            try {
+                const res = await fetch("http://localhost:9004/api");
+
+                if (res.ok) {
+                    const data = await res.json()
+                        .catch((error) => {
+                            console.log(error)
+                        });
+                    console.log(data);
+                    console.log(data.message);
+                }
+
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        f();
+    }, []);
 
     return (
         <div className="px-8">
