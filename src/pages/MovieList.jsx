@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { MovieListService } from '../services/MovieListService';
+import { useNavigate } from 'react-router-dom';
 
 export default function MovieBookingApp() {
+    const navigate = useNavigate();
     const [movies, setMovies] = useState([]);
+    const [DIYmovies, setDIYmovies] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showTheaterModal, setShowTheaterModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [showPeopleModal, setShowPeopleModal] = useState(false);
+    const [selectedMovie, setSelectedMovie] = useState(null);
+    const [peopleCount, setPeopleCount] = useState(1);
+
     const [selectedDate, setSelectedDate] = useState(() => {
         const today = new Date();
         today.setDate(today.getDate() - 1); // 박스오피스는 전날 기준
         return today.toISOString().split('T')[0];
     });
-
-    const [showPeopleModal, setShowPeopleModal] = useState(false);
-    const [selectedMovie, setSelectedMovie] = useState(null);
-    const [peopleCount, setPeopleCount] = useState(1);
 
     // 영화 카드 클릭 핸들러
     const handleMovieClick = (movie) => {
@@ -30,14 +33,11 @@ export default function MovieBookingApp() {
         setShowPeopleModal(true);
     };
 
-
     // MovieService 인스턴스 생성
     const movieService = new MovieListService(
         process.env.REACT_APP_KOFIC_API_KEY,
         process.env.REACT_APP_TMDB_API_KEY
     );
-
-    
 
     const buttonClass = [
         'px-4',
@@ -80,6 +80,21 @@ export default function MovieBookingApp() {
 
         fetchBoxOffice();
     }, [selectedDate]);
+
+    useEffect(() => {
+        async function DIY() {
+            try {
+                const res = await fetch(`${process.env.REACT_APP_API_SERVER}/movie/all`);
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setDIYmovies(data);
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        }
+    }, []);
 
     // 상영 시간표 데이터 (실제 영화 제목 기반)
     const getSchedules = () => {
@@ -134,50 +149,50 @@ export default function MovieBookingApp() {
                 {formatDate(selectedDate)} 박스오피스 기준
             </p>
 
-            <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+            {/* <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <button className={buttonClass} onClick={() => setShowTheaterModal(true)}>
                     영화관 및 예매일 변경
                 </button>
                 <button className={buttonClass} onClick={() => setShowScheduleModal(true)}>
                     영화관별 상영 시간표 보기
                 </button>
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-8">
                 {movies.map((movie) => (
-                <div key={movie.movieCd} onClick={() => {handleMovieClick(movie)}}
-                    className="cursor-pointer hover:bg-gray-100 duration-300 rounded-lg p-2 border-gray-200 shadow-sm hover:shadow-md"
-                >
-                    <div className="relative">
-                        {movie.poster ? (
-                            <img src={movie.poster} alt={`${movie.movieNm} 포스터`} className="rounded-lg w-full h-80 object-cover" />
-                        ) : (
-                            <div className="w-full h-80 bg-gray-300 rounded-lg flex items-center justify-center">
-                                <div className="text-center text-gray-600">
-                                    <div className="text-lg font-semibold">{movie.movieNm}</div>
-                                    <div className="text-sm">포스터 없음</div>
+                    <div key={movie.movieCd} onClick={() => {handleMovieClick(movie)}}
+                        className="cursor-pointer hover:bg-gray-100 duration-300 rounded-lg p-2 border-gray-200 shadow-sm hover:shadow-md"
+                    >
+                        <div className="relative">
+                            {movie.poster ? (
+                                <img src={movie.poster} alt={`${movie.movieNm} 포스터`} className="rounded-lg w-full object-cover" />
+                            ) : (
+                                <div className="w-full h-80 bg-gray-300 rounded-lg flex items-center justify-center">
+                                    <div className="text-center text-gray-600">
+                                        <div className="text-lg font-semibold">{movie.movieNm}</div>
+                                        <div className="text-sm">포스터 없음</div>
+                                    </div>
                                 </div>
+                            )}
+                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-bold">
+                                {movie.rank}위
                             </div>
-                        )}
-                        <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-bold">
-                            {movie.rank}위
+                        </div>
+                        <div className="p-2 flex justify-between">
+                            <h2 className="text-3xl font-bold text-blue-600" style={{ width: '80px' }}>
+                                {movie.time}
+                            </h2>
+                            <div className="text-right flex-1 ml-4">
+                                <p className="font-semibold text-lg">{movie.movieNm}</p>
+                                <p className="text-sm text-gray-600">
+                                    {movie.availableSeats}석/{movie.totalSeats}석
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    누적관객: {parseInt(movie.audiAcc).toLocaleString()}명
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <div className="p-2 flex justify-between">
-                        <h2 className="text-3xl font-bold text-blue-600" style={{ width: '80px' }}>
-                            {movie.time}
-                        </h2>
-                        <div className="text-right flex-1 ml-4">
-                            <p className="font-semibold text-lg">{movie.movieNm}</p>
-                            <p className="text-sm text-gray-600">
-                                {movie.availableSeats}석/{movie.totalSeats}석
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                누적관객: {parseInt(movie.audiAcc).toLocaleString()}명
-                            </p>
-                        </div>
-                    </div>
-                </div>
                 ))}
             </div>
 
@@ -317,12 +332,18 @@ export default function MovieBookingApp() {
                             >
                                 취소
                             </button>
-                            <button
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" 
                                 onClick={() => {
-                                    alert(`${selectedMovie.movieNm} ${selectedMovie.scheduleTimes[0] || ''} - ${peopleCount}명 예매합니다`);
+                                    navigate("/seat-select", {
+                                        state: {
+                                            movie: selectedMovie,
+                                            time: selectedMovie.scheduleTimes[0],
+                                            people: peopleCount,
+                                            date: selectedDate,
+                                        },
+                                    });
                                     setShowPeopleModal(false);
                                 }}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                             >
                                 좌석 지정하기
                             </button>

@@ -73,4 +73,5 @@ export class MovieListService {
 
         return moviesWithDetails;
     }
+
 }

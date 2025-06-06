@@ -7,6 +7,9 @@ import HomePage from "./pages/HomePage";
 import MovieList from "./pages/MovieList";
 
 import BoxOffice from "./pages/Plm";
+import Reservation from "./pages/Reservation";
+import Refund from "./pages/Refund";
+import SeatSelect from "./pages/SeatSelect";
 
 export default function App() {
     return (
@@ -19,12 +22,12 @@ export default function App() {
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/movie-list" element={<MovieList />} />
+                        <Route path="/reservation" element={<Reservation />} />
+                        <Route path="/refund" element={<Refund />} />
                         <Route path="/asd" element={<BoxOffice />} />
+                        <Route path="/seat-select" element={<SeatSelect />} />
                     </Routes>
                 </main>
-                <footer>
-
-                </footer>
             </BrowserRouter>
         </div>
     );
