@@ -28,7 +28,7 @@ export default function SeatSelection(props) {
     const generateSeats = () => {
         const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
         const seatsPerRow = 14;
-        const occupiedSeats = ['A5', 'A6', 'C8', 'D12', 'F3', 'G7', 'H10', 'I2']; // 이미 예약된 좌석
+        const occupiedSeats = []; // 이미 예약된 좌석
         
         return rows.map(row => ({
             row,
@@ -61,7 +61,7 @@ export default function SeatSelection(props) {
         }
     };
 
-    const handlePayment = () => {
+    const handlePayment = async () => {
         if (selectedSeats.length === 0) {
             alert('좌석을 선택해주세요.');
             return;
@@ -78,11 +78,33 @@ export default function SeatSelection(props) {
             time: selectedTime,
             people: peopleCount,
             seats: selectedSeats,
-            theater: 'CGV 강남',
+            cinema: 'CGV 강남',
             totalAmount: selectedSeats.length * 12000 // 티켓 가격 12,000원
         };
 
-        onPayment(reservationData);
+        try {
+            const res = await fetch(`${process.env.REACT_APP_API_SERVER}/reservation`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(reservationData)
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+                alert('예약이 완료되었습니다!');
+                console.log('예약 결과:', result);
+                onPayment(reservationData);
+            } else {
+                const error = await res.json();
+                alert(error.message || '예약에 실패했습니다.');
+            }
+
+        } catch (error) {
+            console.error('예약 오류:', error);
+            alert('네트워크 오류가 발생했습니다.');
+        }
     };
 
     const getSeatClass = (seat) => {
@@ -96,11 +118,11 @@ export default function SeatSelection(props) {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-4">
+        <div className="bg-gray-100 p-4">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 text-center">
                     <h1 className="text-3xl font-bold mb-2">좌석 선택</h1>
-                    <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                    <div className="rounded-lg p-4 mb-4">
                         <p className="text-lg"><span className="text-blue-400">영화:</span> {movieData.movieNm}</p>
                         <p><span className="text-blue-400">일시:</span> {selectedDate} {selectedTime}</p>
                         <p><span className="text-blue-400">인원:</span> {peopleCount}명</p>
@@ -128,21 +150,18 @@ export default function SeatSelection(props) {
                     </div>
                 </div>
 
-                <div className="bg-gray-800 rounded-lg p-6 mb-6">
+                <div className="rounded-lg p-6 mb-6">
                     <div className="space-y-3">
                         {seatData.map((rowData) => (
                             <div key={rowData.row} className="flex items-center justify-center space-x-2">
-                                <div className="w-8 text-center font-bold text-gray-400">
+                                <div className="w-8 text-center font-bold">
                                     {rowData.row}
                                 </div>
                                 
                                 <div className="flex space-x-1">
                                     {rowData.seats.slice(0, 6).map((seat) => (
-                                        <button
-                                            key={seat.id}
-                                            onClick={() => toggleSeat(seat.id, seat.isOccupied)}
+                                        <button key={seat.id} onClick={() => toggleSeat(seat.id, seat.isOccupied)} disabled={seat.isOccupied} 
                                             className={`w-8 h-8 rounded text-xs font-bold transition-all duration-200 ${getSeatClass(seat)}`}
-                                            disabled={seat.isOccupied}
                                         >
                                             {seat.number}
                                         </button>
@@ -164,7 +183,7 @@ export default function SeatSelection(props) {
                                     ))}
                                 </div>
                                 
-                                <div className="w-8 text-center font-bold text-gray-400">
+                                <div className="w-8 text-center font-bold">
                                     {rowData.row}
                                 </div>
                             </div>
@@ -172,14 +191,14 @@ export default function SeatSelection(props) {
                     </div>
                 </div>
 
-                <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                <div className="rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-bold mb-2">선택된 좌석</h3>
                     <div className="flex items-center justify-between">
                         <div>
                             {selectedSeats.length > 0 ? (
                                 <div className="flex space-x-2">
                                     {selectedSeats.map(seat => (
-                                        <span key={seat} className="bg-red-500 px-2 py-1 rounded text-sm">
+                                        <span key={seat} className="bg-red-500 px-2 py-1 rounded text-sm text-white">
                                             {seat}
                                         </span>
                                     ))}
@@ -198,15 +217,12 @@ export default function SeatSelection(props) {
                 </div>
 
                 <div className="flex space-x-4">
-                    <button
-                        onClick={onBack}
-                        className="flex-1 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-bold"
+                    <button onClick={onBack}
+                        className="flex-1 py-3 bg-gray-400 text-white rounded-lg hover:bg-gray-700 transition font-bold"
                     >
                         이전 단계
                     </button>
-                    <button
-                        onClick={handlePayment}
-                        disabled={selectedSeats.length === 0}
+                    <button onClick={handlePayment} disabled={selectedSeats.length === 0}
                         className={`flex-1 py-3 rounded-lg font-bold transition ${
                             selectedSeats.length === 0
                                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
