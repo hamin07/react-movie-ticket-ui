@@ -11,7 +11,7 @@ export default function HomePage() {
 
     const services = [
         { title: "티켓 구매", img: "🎫", loc: "/movie-list" },
-        { title: "예매티켓출력", img: "🧾", loc: "/reservation" },
+        { title: "예매티켓출력", img: "🧾", loc: "/reservation-ticket-print" },
         { title: "환불", img: "💳", loc: "/refund" }
     ];
 
@@ -78,42 +78,31 @@ export default function HomePage() {
     };
 
     if (!isLoggedIn) {
+        // min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+            <div className="flex items-center justify-center px-4">
                 <div className="max-w-md w-full">
                     <div className="bg-white rounded-2xl shadow-xl p-8">
                         <div className="text-center mb-8">
-                            <div className="text-6xl mb-4">🎫</div>
-                            <h1 className="text-3xl font-bold text-gray-800 mb-2">티켓 서비스</h1>
+                            {/* <div className="text-6xl mb-4">🎫</div> */}
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">로그인</h1>
                             <p className="text-gray-600">서비스 이용을 위해 로그인해주세요</p>
                         </div>
 
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div>
                                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">사용자명 (휴대폰 번호)</label>
-                                <input
-                                    type="text"
-                                    id="phone"
-                                    name="phone"
-                                    value={loginForm.phone}
-                                    onChange={handleInputChange}
+                                <input type="text" id="phone" name="phone" value={loginForm.phone} onChange={handleInputChange}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="사용자명을 입력하세요"
-                                    disabled={isLoading}
+                                    placeholder="사용자명을 입력하세요" disabled={isLoading}
                                 />
                             </div>
 
                             <div>
                                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
-                                <input
-                                    type="password"
-                                    id="password"
-                                    name="password"
-                                    value={loginForm.password}
-                                    onChange={handleInputChange}
+                                <input type="password" id="password" name="password" value={loginForm.password} onChange={handleInputChange}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="비밀번호를 입력하세요"
-                                    disabled={isLoading}
+                                    placeholder="비밀번호를 입력하세요" disabled={isLoading}
                                 />
                             </div>
 
@@ -121,10 +110,9 @@ export default function HomePage() {
                                 <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">{loginError}</div>
                             )}
 
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 
+                                text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-indigo-700 focus:outline-none 
+                                focus:ring-2 focus:ring-blue-500"
                             >
                                 {isLoading ? (
                                     <div className="flex items-center justify-center">
@@ -147,33 +135,17 @@ export default function HomePage() {
     }
 
     return (
-        <div className="px-8 min-h-screen bg-gray-50">
+        <div className="px-8">
             <div className="max-w-6xl mx-auto py-8">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800">안녕하세요, {user?.name}님! 👋</h1>
-                        <p className="text-gray-600">어떤 서비스를 이용하시겠어요?</p>
-                        {user?.phone && <p className="text-sm text-gray-500">({user.phone})</p>}
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                    >
-                        로그아웃
-                    </button>
-                </div>
-
                 <div className="text-center mb-12">
-                    <h2 className="text-4xl font-bold text-gray-800 mb-4">티켓 서비스</h2>
+                    <h2 className="text-4xl font-bold text-gray-800 mb-4">무엇을 하고싶으세요?</h2>
                     <p className="text-lg text-gray-600">원하는 서비스를 선택해 주세요</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {services.map((v, i) => (
-                        <div
-                            key={i}
-                            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 p-8 text-center cursor-pointer border border-gray-100"
-                            onClick={() => navigate(v.loc)}
+                        <div key={i} onClick={() => navigate(v.loc)} className="group bg-white rounded-2xl shadow-lg 
+                            hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 p-8 text-center cursor-pointer border border-gray-100"
                         >
                             <div className="text-7xl mb-6 group-hover:scale-110 transition-transform duration-300">{v.img}</div>
                             <h3 className="text-3xl font-semibold text-gray-800 mb-4">{v.title}</h3>
@@ -189,6 +161,17 @@ export default function HomePage() {
                         <span className="text-sm">빠르고 안전한 서비스</span>
                         <div className="w-8 h-px bg-gray-300"></div>
                     </div>
+                </div>
+
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        {/* <h1 className="text-2xl font-bold text-gray-800">안녕하세요, {user?.name}님! 👋</h1>
+                        <p className="text-gray-600">어떤 서비스를 이용하시겠어요?</p>
+                        {user?.phone && <p className="text-sm text-gray-500">({user.phone})</p>} */}
+                    </div>
+                    <button onClick={handleLogout} className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200">
+                        로그아웃
+                    </button>
                 </div>
             </div>
         </div>

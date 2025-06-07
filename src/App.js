@@ -2,14 +2,13 @@ import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Header from "./components/Header";
-
 import HomePage from "./pages/HomePage";
 import MovieList from "./pages/MovieList";
-
-import BoxOffice from "./pages/Plm";
-import Reservation from "./pages/Reservation";
+import ReservationTicket from "./pages/ReservationTicket";
 import Refund from "./pages/Refund";
 import SeatSelect from "./pages/SeatSelect";
+
+import NotFound from "./pages/NotFound";
 
 export default function App() {
     return (
@@ -22,10 +21,10 @@ export default function App() {
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/movie-list" element={<MovieList />} />
-                        <Route path="/reservation" element={<Reservation />} />
+                        <Route path="/reservation-ticket-print" element={<ReservationTicket />} />
                         <Route path="/refund" element={<Refund />} />
-                        <Route path="/asd" element={<BoxOffice />} />
                         <Route path="/seat-select" element={<SeatSelect />} />
+                        <Route path="*" element={<NotFound />} />
                     </Routes>
                 </main>
             </BrowserRouter>

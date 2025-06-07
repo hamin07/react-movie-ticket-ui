@@ -1,125 +1,185 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { MovieListService } from '../services/MovieListService';
 import { useNavigate } from 'react-router-dom';
 
-export default function MovieBookingApp() {
+export default function MovieList() {
     const navigate = useNavigate();
+    
     const [movies, setMovies] = useState([]);
-    const [DIYmovies, setDIYmovies] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showTheaterModal, setShowTheaterModal] = useState(false);
-    const [showScheduleModal, setShowScheduleModal] = useState(false);
-    const [showPeopleModal, setShowPeopleModal] = useState(false);
+    
+    // 모달 상태를 객체로 통합
+    const [modals, setModals] = useState({
+        theater: false,
+        schedule: false,
+        people: false
+    });
+    
     const [selectedMovie, setSelectedMovie] = useState(null);
+    const [selectedTime, setSelectedTime] = useState('');
     const [peopleCount, setPeopleCount] = useState(1);
 
     const [selectedDate, setSelectedDate] = useState(() => {
-        const today = new Date();
-        today.setDate(today.getDate() - 1); // 박스오피스는 전날 기준
-        return today.toISOString().split('T')[0];
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        return yesterday.toISOString().split('T')[0];
     });
 
-    // 영화 카드 클릭 핸들러
-    const handleMovieClick = (movie) => {
-        const schedules = getSchedules();
-        const foundSchedule = schedules.find((s) => s.movie === movie.movieNm);
+    const movieService = useMemo(() => {
+        try {
+            const koficKey = process.env.REACT_APP_KOFIC_API_KEY || '';
+            const tmdbKey = process.env.REACT_APP_TMDB_API_KEY || '';
+            
+            if (!koficKey || !tmdbKey) {
+                console.warn('API 키가 설정되지 않았습니다.');
+                return null;
+            }
+            
+            return new MovieListService(koficKey, tmdbKey);
+        } catch (error) {
+            console.warn('MovieListService 초기화 실패:', error);
+            return null;
+        }
+    }, []);
 
-        setSelectedMovie({
-            ...movie,
-            scheduleTimes: foundSchedule ? foundSchedule.times : [],  // 시간 정보 추가
-        });
-        setPeopleCount(1);
-        setShowPeopleModal(true);
-    };
+    const buttonClass = useMemo(() => [
+        'px-4', 'py-2', 'shadow-lg', 'border', 'border-gray-300',
+        'rounded-full', 'cursor-pointer', 'hover:shadow-xl',
+        'transition-all', 'duration-300', 'bg-white', 'hover:bg-gray-50'
+    ].join(' '), []);
 
-    // MovieService 인스턴스 생성
-    const movieService = new MovieListService(
-        process.env.REACT_APP_KOFIC_API_KEY,
-        process.env.REACT_APP_TMDB_API_KEY
-    );
-
-    const buttonClass = [
-        'px-4',
-        'py-2',
-        'shadow-lg',
-        'border',
-        'border-gray-300',
-        'rounded-full',
-        'cursor-pointer',
-        'hover:shadow-xl',
-        'transition-all',
-        'duration-300',
-        'bg-white',
-        'hover:bg-gray-50',
-    ].join(' ');
-
-    // 영화관 목록 데이터
-    const [theaters] = useState([
+    const theaters = useMemo(() => [
         { id: 1, name: 'CGV 강남', location: '서울 강남구', distance: '2.3km' },
         { id: 2, name: '롯데시네마 홍대', location: '서울 마포구', distance: '5.1km' },
         { id: 3, name: '메가박스 코엑스', location: '서울 강남구', distance: '3.7km' },
         { id: 4, name: 'CGV 용산아이파크몰', location: '서울 용산구', distance: '4.2km' },
-        { id: 5, name: '롯데시네마 월드타워', location: '서울 송파구', distance: '6.8km' },
-    ]);
+        { id: 5, name: '롤데시네마 월드타워', location: '서울 송파구', distance: '6.8km' }
+    ], []);
 
-    useEffect(() => {
-        const fetchBoxOffice = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                const moviesWithDetails = await movieService.fetchMoviesWithDetails(selectedDate);
-                setMovies(moviesWithDetails);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBoxOffice();
-    }, [selectedDate]);
-
-    useEffect(() => {
-        async function DIY() {
-            try {
-                const res = await fetch(`${process.env.REACT_APP_API_SERVER}/movie/all`);
-
-                if (res.ok) {
-                    const data = await res.json();
-                    setDIYmovies(data);
-                }
-            } catch (error) {
-                console.log(error);
-            }
+    // 더미 데이터를 상수로 분리
+    const DUMMY_MOVIES = useMemo(() => [
+        {
+            movieCd: 'dummy1',
+            movieNm: '아바타: 물의 길',
+            rank: '1',
+            audiAcc: '1000000',
+            poster: null,
+            time: '19:00',
+            availableSeats: 50,
+            totalSeats: 100
+        },
+        {
+            movieCd: 'dummy2',
+            movieNm: '탑건: 매버릭',
+            rank: '2',
+            audiAcc: '800000',
+            poster: null,
+            time: '20:30',
+            availableSeats: 35,
+            totalSeats: 100
         }
+    ], []);
+
+    // 모달 제어 함수들을 useCallback으로 최적화
+    const toggleModal = useCallback((modalName, value) => {
+        setModals(prev => ({ ...prev, [modalName]: value }));
     }, []);
 
-    // 상영 시간표 데이터 (실제 영화 제목 기반)
-    const getSchedules = () => {
+    // 영화 클릭 핸들러 최적화
+    const handleMovieClick = useCallback((movie) => {
+        const scheduleTimes = ['09:30', '12:10', '14:50', '17:30', '20:10'];
+        
+        setSelectedMovie({
+            ...movie,
+            scheduleTimes
+        });
+        setPeopleCount(1);
+        setSelectedTime('');
+        toggleModal('people', true);
+    }, [toggleModal]);
+
+    // 박스오피스 데이터 페치 함수 최적화
+    const fetchBoxOffice = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            if (movieService) {
+                const moviesWithDetails = await movieService.fetchMoviesWithDetails(selectedDate);
+                setMovies(moviesWithDetails);
+            } else {
+                console.warn('MovieService가 없습니다. 더미 데이터를 사용합니다.');
+                setMovies(DUMMY_MOVIES);
+            }
+        } catch (err) {
+            console.error('영화 데이터 로딩 실패:', err);
+            setError(err.message);
+            setMovies(DUMMY_MOVIES); // 오류 시 더미 데이터 사용
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedDate, movieService, DUMMY_MOVIES]);
+
+    // useEffect 최적화
+    useEffect(() => {
+        fetchBoxOffice();
+    }, [fetchBoxOffice]);
+
+    // 상영 시간표 데이터 생성 최적화
+    const schedules = useMemo(() => {
+        if (!movies?.length) return [];
+        
         return movies.map((movie) => ({
             movie: movie.movieNm,
-            times: ['09:30', '12:10', '14:50', '17:30', '20:10'],
+            times: ['09:30', '12:10', '14:50', '17:30', '20:10']
         }));
-    };
+    }, [movies]);
 
-    const handleDateChange = (e) => {
+    // 날짜 관련 핸들러들 최적화
+    const handleDateChange = useCallback((e) => {
         setSelectedDate(e.target.value);
-        setShowTheaterModal(false);
-    };
+        toggleModal('theater', false);
+    }, [toggleModal]);
 
-    const handleQuickDateChange = (offset) => {
+    const handleQuickDateChange = useCallback((offset) => {
         const date = new Date();
-        date.setDate(date.getDate() + offset - 1); // 박스오피스 기준에 맞춰 조정
+        date.setDate(date.getDate() + offset - 1);
         setSelectedDate(date.toISOString().split('T')[0]);
-        setShowTheaterModal(false);
-    };
+        toggleModal('theater', false);
+    }, [toggleModal]);
 
-    const formatDate = (dateStr) => {
+    // 날짜 포맷팅 함수 최적화
+    const formatDate = useCallback((dateStr) => {
         const [year, month, day] = dateStr.split('-');
         return `${year}년 ${month}월 ${day}일`;
-    };
+    }, []);
+
+    // 좌석 선택 핸들러 최적화
+    const handleSeatSelection = useCallback(() => {
+        if (!selectedTime) {
+            alert('상영 시간을 선택해주세요.');
+            return;
+        }
+
+        navigate("/seat-select", {
+            state: {
+                movie: selectedMovie,
+                time: selectedTime,
+                people: peopleCount,
+                date: selectedDate,
+            },
+        });
+        toggleModal('people', false);
+    }, [selectedTime, selectedMovie, peopleCount, selectedDate, navigate, toggleModal]);
+
+    const decreasePeople = useCallback(() => {
+        setPeopleCount(prev => Math.max(1, prev - 1));
+    }, []);
+
+    const increasePeople = useCallback(() => {
+        setPeopleCount(prev => Math.min(10, prev + 1));
+    }, []);
 
     if (loading) {
         return (
@@ -129,14 +189,15 @@ export default function MovieBookingApp() {
         );
     }
 
-    if (error) {
+    if (error && movies.length === 0) {
         return (
             <div className="px-8 py-12 text-center">
                 <div className="text-red-600 text-xl">에러: {error}</div>
-                <button onClick={() => window.location.reload()} 
+                <button 
+                    onClick={() => window.location.reload()} 
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                다시 시도
+                    다시 시도
                 </button>
             </div>
         );
@@ -149,208 +210,242 @@ export default function MovieBookingApp() {
                 {formatDate(selectedDate)} 박스오피스 기준
             </p>
 
-            {/* <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-                <button className={buttonClass} onClick={() => setShowTheaterModal(true)}>
-                    영화관 및 예매일 변경
-                </button>
-                <button className={buttonClass} onClick={() => setShowScheduleModal(true)}>
-                    영화관별 상영 시간표 보기
-                </button>
-            </div> */}
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-8">
                 {movies.map((movie) => (
-                    <div key={movie.movieCd} onClick={() => {handleMovieClick(movie)}}
-                        className="cursor-pointer hover:bg-gray-100 duration-300 rounded-lg p-2 border-gray-200 shadow-sm hover:shadow-md"
-                    >
-                        <div className="relative">
-                            {movie.poster ? (
-                                <img src={movie.poster} alt={`${movie.movieNm} 포스터`} className="rounded-lg w-full object-cover" />
-                            ) : (
-                                <div className="w-full h-80 bg-gray-300 rounded-lg flex items-center justify-center">
-                                    <div className="text-center text-gray-600">
-                                        <div className="text-lg font-semibold">{movie.movieNm}</div>
-                                        <div className="text-sm">포스터 없음</div>
-                                    </div>
-                                </div>
-                            )}
-                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-bold">
-                                {movie.rank}위
-                            </div>
-                        </div>
-                        <div className="p-2 flex justify-between">
-                            <h2 className="text-3xl font-bold text-blue-600" style={{ width: '80px' }}>
-                                {movie.time}
-                            </h2>
-                            <div className="text-right flex-1 ml-4">
-                                <p className="font-semibold text-lg">{movie.movieNm}</p>
-                                <p className="text-sm text-gray-600">
-                                    {movie.availableSeats}석/{movie.totalSeats}석
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                    누적관객: {parseInt(movie.audiAcc).toLocaleString()}명
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    <MovieCard 
+                        key={movie.movieCd} 
+                        movie={movie} 
+                        onClick={handleMovieClick}
+                    />
                 ))}
             </div>
 
-            {/* 영화관 변경 모달 */}
-            {showTheaterModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">영화관 및 예매일 변경</h2>
-                            <button onClick={() => setShowTheaterModal(false)}
-                                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                            >
-                                X
-                            </button>
-                        </div>
+            <PeopleModal 
+                isOpen={modals.people}
+                movie={selectedMovie}
+                selectedTime={selectedTime}
+                peopleCount={peopleCount}
+                onClose={() => toggleModal('people', false)}
+                onTimeSelect={setSelectedTime}
+                onDecreasePeople={decreasePeople}
+                onIncreasePeople={increasePeople}
+                onConfirm={handleSeatSelection}
+            />
 
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold mb-3">예매일 선택</h3>
-                            <div className="flex gap-2 mb-4 flex-wrap">
-                                {['오늘', '내일', '모레'].map((label, index) => (
-                                <button key={index} onClick={() => handleQuickDateChange(index)}
-                                    className="px-4 py-2 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                                >
-                                    {label}
-                                </button>
-                                ))}
-                            </div>
-                            <input type="date" className="border rounded-lg px-3 py-2 w-full"
-                                value={selectedDate} onChange={handleDateChange}
-                            />
-                        </div>
-                        
-                        <div>
-                            <h3 className="text-lg font-semibold mb-3">영화관 선택</h3>
-                            <ul className="space-y-2">
-                                {theaters.map((theater) => (
-                                <li key={theater.id} className="p-4 border rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
-                                    <div className="font-semibold">{theater.name}</div>
-                                    <div className="text-sm text-gray-600">{theater.location}</div>
-                                    <div className="text-xs text-gray-500">{theater.distance}</div>
-                                </li>
-                                ))}
-                            </ul>
-                        </div>
-                        
-                        <div className="mt-6 flex justify-end">
-                            <button onClick={() => setShowTheaterModal(false)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                확인
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <TheaterModal 
+                isOpen={modals.theater}
+                theaters={theaters}
+                onClose={() => toggleModal('theater', false)}
+                onTheaterSelect={() => {
+                    toggleModal('theater', false);
+                    toggleModal('schedule', true);
+                }}
+            />
 
-            {/* 상영 시간표 모달 */}
-            {showScheduleModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">영화관별 상영 시간표</h2>
-                            <button
-                                onClick={() => setShowScheduleModal(false)}
-                                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                            >
-                                X
-                            </button>
-                        </div>
-                        <div className="space-y-4">
-                            {getSchedules().map((schedule, index) => (
-                                <div key={index} className="p-4 border rounded-lg hover:bg-gray-100 transition-colors">
-                                    <div className="font-semibold mb-2">{schedule.movie}</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {schedule.times.map((time, idx) => (
-                                            <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                                {time}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showPeopleModal && selectedMovie && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">{selectedMovie.movieNm} 예매</h2>
-                            <button
-                                onClick={() => setShowPeopleModal(false)}
-                                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                            >
-                                X
-                            </button>
-                        </div>
-
-                        {/* 영화 상영 시간 표시 */}
-                        <div className="mb-4">
-                            <label className="block text-lg font-semibold mb-2">상영 시간 선택</label>
-                            <div className="flex flex-wrap gap-2">
-                                {(selectedMovie.scheduleTimes || []).map((time, index) => (
-                                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                        {time}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 관람 인원 수 선택 */}
-                        <div className="mb-4">
-                            <label className="block text-lg font-semibold mb-2">관람 인원 수</label>
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => setPeopleCount((prev) => Math.max(1, prev - 1))}
-                                    className="px-3 py-1 bg-gray-200 rounded-full text-xl"
-                                >
-                                    -
-                                </button>
-                                <span className="text-xl font-bold">{peopleCount}</span>
-                                <button
-                                    onClick={() => setPeopleCount((prev) => Math.min(10, prev + 1))}
-                                    className="px-3 py-1 bg-gray-200 rounded-full text-xl"
-                                >
-                                    +
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowPeopleModal(false)}
-                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition"
-                            >
-                                취소
-                            </button>
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" 
-                                onClick={() => {
-                                    navigate("/seat-select", {
-                                        state: {
-                                            movie: selectedMovie,
-                                            time: selectedMovie.scheduleTimes[0],
-                                            people: peopleCount,
-                                            date: selectedDate,
-                                        },
-                                    });
-                                    setShowPeopleModal(false);
-                                }}
-                            >
-                                좌석 지정하기
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ScheduleModal 
+                isOpen={modals.schedule}
+                selectedDate={selectedDate}
+                schedules={schedules}
+                buttonClass={buttonClass}
+                onClose={() => toggleModal('schedule', false)}
+                onDateChange={handleDateChange}
+                onQuickDateChange={handleQuickDateChange}
+                onMovieSelect={(schedule) => {
+                    setSelectedMovie(schedule);
+                    toggleModal('schedule', false);
+                    toggleModal('people', true);
+                }}
+            />
         </div>
     );
 }
+
+// 영화 카드
+const MovieCard = React.memo(({ movie, onClick }) => (
+    <div onClick={() => onClick(movie)}
+        className="cursor-pointer hover:bg-gray-100 duration-300 rounded-lg p-2 border-gray-200 shadow-sm hover:shadow-md"
+    >
+        <div className="relative">
+            {movie.poster ? (
+                <img 
+                    src={movie.poster} 
+                    alt={`${movie.movieNm} 포스터`} 
+                    className="rounded-lg w-full object-cover" 
+                />
+            ) : (
+                <div className="w-full h-80 bg-gray-300 rounded-lg flex items-center justify-center">
+                    <div className="text-center text-gray-600">
+                        <div className="text-lg font-semibold">{movie.movieNm}</div>
+                        <div className="text-sm">포스터 없음</div>
+                    </div>
+                </div>
+            )}
+            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-bold">
+                {movie.rank}위
+            </div>
+        </div>
+        <div className="p-2 flex justify-between">
+            <h2 className="text-3xl font-bold text-blue-600" style={{ width: '80px' }}>
+                {movie.time || '19:00'}
+            </h2>
+            <div className="text-right flex-1 ml-4">
+                <p className="font-semibold text-lg">{movie.movieNm}</p>
+                <p className="text-sm text-gray-600">
+                    {movie.availableSeats || 50}석/{movie.totalSeats || 100}석
+                </p>
+                <p className="text-xs text-gray-500">
+                    누적관객: {parseInt(movie.audiAcc || 0).toLocaleString()}명
+                </p>
+            </div>
+        </div>
+    </div>
+));
+
+// 인원 선택 모달
+const PeopleModal = React.memo(({ 
+    isOpen, movie, selectedTime, peopleCount,
+    onClose, onTimeSelect, onDecreasePeople, onIncreasePeople, onConfirm 
+}) => {
+    if (!isOpen || !movie) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold">{movie.movieNm} 예매</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className="mb-4">
+                    <label className="block text-lg font-semibold mb-2">상영 시간 선택</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        {(movie.scheduleTimes || ['09:30', '12:10', '14:50', '17:30', '20:10']).map((time, index) => (
+                            <button
+                                key={index}
+                                onClick={() => onTimeSelect(time)}
+                                className={`px-3 py-2 rounded-lg text-sm transition ${
+                                    selectedTime === time
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                }`}
+                            >
+                                {time}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="mb-4">
+                    <label className="block text-lg font-semibold mb-2">관람 인원 수</label>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={onDecreasePeople}
+                            className="px-3 py-1 bg-gray-200 rounded-full text-xl hover:bg-gray-300"
+                        >
+                            -
+                        </button>
+                        <span className="text-xl font-bold">{peopleCount}</span>
+                        <button
+                            onClick={onIncreasePeople}
+                            className="px-3 py-1 bg-gray-200 rounded-full text-xl hover:bg-gray-300"
+                        >
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-2">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition">
+                        취소
+                    </button>
+                    <button onClick={onConfirm} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        예매
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+// 영화관 선택 모달
+const TheaterModal = React.memo(({ isOpen, theaters, onClose, onTheaterSelect }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h2 className="text-2xl font-bold mb-4">영화관 선택</h2>
+                <div className="grid grid-cols-1 gap-4">
+                    {theaters.map((theater) => (
+                        <div
+                            key={theater.id}
+                            onClick={onTheaterSelect}
+                            className="p-4 border rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                        >
+                            <h3 className="text-xl font-semibold">{theater.name}</h3>
+                            <p className="text-gray-600">{theater.location}</p>
+                            <p className="text-gray-500">{theater.distance}</p>
+                        </div>
+                    ))}
+                </div>
+                <button onClick={onClose} className="mt-6 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition">
+                    닫기
+                </button>
+            </div>
+        </div>
+    );
+});
+
+// 상영 시간표 모달
+const ScheduleModal = React.memo(({ 
+    isOpen, selectedDate, schedules, buttonClass,
+    onClose, onDateChange, onQuickDateChange, onMovieSelect 
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h2 className="text-2xl font-bold mb-4">상영 시간표</h2>
+                
+                <div className="mb-4">
+                    <label className="block text-lg font-semibold mb-2">날짜 선택</label>
+                    <input type="date" value={selectedDate} onChange={onDateChange} 
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    />
+                </div>
+                
+                <div className="mb-4">
+                    <label className="block text-lg font-semibold mb-2">빠른 날짜 선택</label>
+                    <div className="flex space-x-4">
+                        {[1, 2, 3, 4, 5].map((offset) => (
+                            <button key={offset} onClick={() => onQuickDateChange(offset)} className={buttonClass}>
+                                {offset}일 후
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4">
+                    {schedules.map((schedule) => (
+                        <div key={schedule.movie} onClick={() => onMovieSelect(schedule)}
+                            className="p-4 border rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                        >
+                            <h3 className="text-xl font-semibold">{schedule.movie}</h3>
+                            <p className="text-gray-600">상영 시간: {schedule.times.join(', ')}</p>
+                        </div>
+                    ))}
+                </div>
+                
+                <button onClick={onClose} className="mt-6 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition">
+                    닫기
+                </button>
+            </div>
+        </div>
+    );
+});
