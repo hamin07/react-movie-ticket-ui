@@ -16,8 +16,8 @@
 // }
 export default function Refund() {
     return (
-        <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-            <div className="bg-white border-4 border-red-350 p-10 rounded-2xl shadow-2xl w-full max-w-3xl">
+        <div className="bg-gray-100 min-h-screen flex items-center justify-center max-w-8xl">
+            <div className="bg-white border-4 border-red-400 p-10 rounded-2xl shadow-2xl w-full max-w-4xl">
                 <h1 className="text-5xl font-bold text-center text-red-600 mb-6">환불 안내</h1>
                 
                 <p className="text-center text-xl text-gray-700 mb-8">
