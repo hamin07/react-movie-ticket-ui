@@ -14,9 +14,10 @@ export default function MovieList() {
     useEffect(() => {
         async function fetchMovies() {
             try {
-                const res = await fetch(`${API_BASE_URL}/movies`);
+                const res = await fetch(`${API_BASE_URL}/movie/all`);
                 if (res.ok) {
                     const data = await res.json();
+                    console.log(data);
                     setMovies(data);
                 }
             } catch (error) {
@@ -45,6 +46,27 @@ export default function MovieList() {
         });
     };
 
+    // 관람 연령 배지 색상 설정 함수
+    function getRatingBadgeStyle(ratingAge) {
+        switch (ratingAge) {
+            case '전체관람가':
+            case 'ALL':
+                return 'bg-green-600 text-white';
+            case '12':
+            case '12세 이상 관람가':
+                return 'bg-yellow-400 text-white';
+            case '15':
+            case '15세 이상 관람가':
+                return 'bg-orange-500 text-white';
+            case '18':
+            case '청소년 관람불가':
+            case '18세':
+                return 'bg-red-600 text-white';
+            default:
+                return 'bg-gray-400 text-white';
+        }
+    }
+
     return (
         <div className="px-8 py-4">
             <h1 className="text-4xl font-semibold text-center mb-4">티켓구매</h1>
@@ -52,13 +74,37 @@ export default function MovieList() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {movies.map((movie) => (
                     <div
-                        key={movie.id}
-                        className="rounded-lg overflow-hidden hover:shadow-xl duration-300 cursor-pointer"
+                        key={`${movie.movieId}-${movie.movieTitle}-${movie.startTime}`}
+                        className="relative overflow-hidden hover:shadow-xl duration-300 cursor-pointer bg-white"
                         onClick={() => handleMovieClick(movie)}
                     >
-                        <img src={movie.posterImageUrl} alt={movie.title} className="w-full object-cover" />
-                        <div className="p-2">
-                            <h2 className="text-lg font-bold">{movie.title}</h2>
+                        {/* 관람 연령 배지 */}
+                        <div
+                            className={`absolute top-2 right-2 px-2.5 py-1 rounded text-lg font-bold shadow-md ${getRatingBadgeStyle(movie.ratingAge)}`}
+                        >
+                            {String(movie.ratingAge).substring(0, 2) == "청소" ? "18" : String(movie.ratingAge).substring(0, 2)}
+                        </div>
+
+                        <img
+                            src={movie.posterImageUrl}
+                            alt={movie.movieTitle}
+                            className="w-full object-cover rounded-lg"
+                        />
+                        <div className="p-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-2xl text-blue-600 font-semibold">
+                                    {movie.startTime &&
+                                        new Date(movie.startTime).toLocaleTimeString([], {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                </span>
+                                <h2 className="text-2xl font-bold text-gray-900">{movie.movieTitle}</h2>
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                                <span className="text-sm text-gray-600">상영관 : {movie.cinemaName}</span>
+                                <span className="text-sm text-gray-600">좌석수 {movie.availableSeats}</span>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -66,49 +112,57 @@ export default function MovieList() {
 
             {/* 관람 인원 선택 모달 */}
             {showModal && selectedMovie && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-8 w-80 shadow-lg relative">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-md p-6 animate-fadeIn relative">
                         {/* 닫기 버튼 */}
                         <button
-                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl"
                             onClick={() => setShowModal(false)}
+                            className="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-2xl font-bold"
+                            aria-label="닫기"
                         >
                             &times;
                         </button>
+
                         {/* 영화 정보 */}
-                        <div className="flex flex-col items-center mb-4">
+                        <div className="flex flex-col items-center mb-5 text-center">
                             <img
                                 src={selectedMovie.posterImageUrl}
-                                alt={selectedMovie.title}
-                                className="w-32 h-44 object-cover rounded mb-2"
+                                alt={selectedMovie.movieTitle}
+                                className="w-32 object-cover rounded-lg mb-3"
                             />
-                            <h2 className="text-xl font-bold mb-1 text-gray-900">{selectedMovie.title}</h2>
-                            {selectedMovie.genre && (
-                                <p className="text-gray-500 text-sm mb-1">{selectedMovie.genre}</p>
-                            )}
-                            {selectedMovie.releaseDate && (
-                                <p className="text-gray-400 text-xs mb-2">개봉일: {selectedMovie.releaseDate}</p>
-                            )}
+                            <h2 className="text-2xl font-bold text-gray-800">{selectedMovie.movieTitle}</h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-sm text-gray-500">{selectedMovie.ratingAge}</span>
+                                <span className="text-sm text-gray-500">| {selectedMovie.genre}</span>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                                {selectedMovie.startTime && (
+                                    <>시작: {new Date(selectedMovie.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
+                                )}
+                            </div>
                         </div>
+
                         {/* 인원 선택 */}
-                        <div className="flex items-center justify-center mb-6">
+                        <div className="flex items-center justify-center gap-4 mb-6">
                             <button
-                                className="px-3 py-1 bg-gray-200 rounded-l text-xl font-bold"
                                 onClick={() => setPeopleCount((prev) => Math.max(1, prev - 1))}
+                                className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 text-xl font-bold"
                             >
-                                -
+                                –
                             </button>
-                            <span className="px-6 py-1 bg-gray-100 text-lg font-semibold">{peopleCount}</span>
+                            <span className="text-xl font-semibold text-gray-800">{peopleCount}</span>
                             <button
-                                className="px-3 py-1 bg-gray-200 rounded-r text-xl font-bold"
                                 onClick={() => setPeopleCount((prev) => Math.min(8, prev + 1))}
+                                className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 text-xl font-bold"
                             >
                                 +
                             </button>
                         </div>
+
+                        {/* 이동 버튼 */}
                         <button
-                            className="w-full py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition"
                             onClick={handlePeopleSelect}
+                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-200"
                         >
                             좌석 선택하기
                         </button>
