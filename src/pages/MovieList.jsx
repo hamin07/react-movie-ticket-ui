@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = process.env.REACT_APP_API_SERVER;
@@ -8,6 +8,7 @@ export default function MovieList() {
     const [selectedMovie, setSelectedMovie] = useState(null);
     const [peopleCount, setPeopleCount] = useState(1);
     const [showModal, setShowModal] = useState(false);
+    const [moviePrice, setMoviePrice] = useState(0);
 
     const navigate = useNavigate();
 
@@ -32,6 +33,7 @@ export default function MovieList() {
     const handleMovieClick = (movie) => {
         setSelectedMovie(movie);
         setPeopleCount(1);
+        setMoviePrice(movie.price || 0); // 영화 가격 설정
         setShowModal(true);
     };
 
@@ -42,6 +44,7 @@ export default function MovieList() {
             state: {
                 movie: selectedMovie,
                 people: peopleCount,
+                price: moviePrice
             },
         });
     };
@@ -113,23 +116,17 @@ export default function MovieList() {
             {/* 관람 인원 선택 모달 */}
             {showModal && selectedMovie && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-md p-6 animate-fadeIn relative">
-                        {/* 닫기 버튼 */}
+                    <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-md p-8 animate-fadeIn relative">
                         <button
                             onClick={() => setShowModal(false)}
-                            className="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-2xl font-bold"
+                            className="absolute top-1 right-3 text-gray-500 hover:text-red-500 text-4xl font-bold"
                             aria-label="닫기"
                         >
                             &times;
                         </button>
 
-                        {/* 영화 정보 */}
                         <div className="flex flex-col items-center mb-5 text-center">
-                            <img
-                                src={selectedMovie.posterImageUrl}
-                                alt={selectedMovie.movieTitle}
-                                className="w-32 object-cover rounded-lg mb-3"
-                            />
+                            <img src={selectedMovie.posterImageUrl} alt={selectedMovie.movieTitle} className="w-80 object-cover rounded-lg mb-3" />
                             <h2 className="text-2xl font-bold text-gray-800">{selectedMovie.movieTitle}</h2>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-sm text-gray-500">{selectedMovie.ratingAge}</span>
@@ -142,24 +139,25 @@ export default function MovieList() {
                             </div>
                         </div>
 
-                        {/* 인원 선택 */}
-                        <div className="flex items-center justify-center gap-4 mb-6">
-                            <button
-                                onClick={() => setPeopleCount((prev) => Math.max(1, prev - 1))}
-                                className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 text-xl font-bold"
-                            >
-                                –
-                            </button>
-                            <span className="text-xl font-semibold text-gray-800">{peopleCount}</span>
-                            <button
-                                onClick={() => setPeopleCount((prev) => Math.min(8, prev + 1))}
-                                className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 text-xl font-bold"
-                            >
-                                +
-                            </button>
+                        {/* 인원 수 + 총 가격 */}
+                        <div className="flex flex-col items-center gap-2 mb-6">
+                            <div className="flex items-center justify-center gap-4">
+                                <button
+                                    onClick={() => setPeopleCount((prev) => Math.max(1, prev - 1))}
+                                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 text-xl font-bold"
+                                >
+                                    -
+                                </button>
+                                <span className="text-xl font-semibold text-gray-800">{peopleCount}</span>
+                                <button
+                                    onClick={() => setPeopleCount((prev) => Math.min(8, prev + 1))}
+                                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 text-xl font-bold"
+                                >
+                                    +
+                                </button>
+                            </div>
                         </div>
 
-                        {/* 이동 버튼 */}
                         <button
                             onClick={handlePeopleSelect}
                             className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-200"

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { jsx } from "react/jsx-runtime";
 
 export default function HomePage() {
     const navigate = useNavigate();
@@ -49,6 +50,8 @@ export default function HomePage() {
                 }
 
                 localStorage.setItem('user', JSON.stringify(userData));
+                console.log(userData);
+                console.log(userData.userId);
                 setUser(userData);
                 setIsLoggedIn(true);
                 setLoginForm({ phone: '', password: '' });
