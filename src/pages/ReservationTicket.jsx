@@ -28,23 +28,15 @@ export default function ReservationTicket() {
         setLoading(true);
         
         try {
-            // 실제 API 호출 대신 시뮬레이션
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // 가상의 성공 응답
-            const data = {
-                movieTitle: "아바타: 물의 길",
-                movieTitleEn: "Avatar: The Way of Water",
-                reservationMoviePosterUrl: "https://via.placeholder.com/200x300/1a365d/ffffff?text=AVATAR",
-                cinemaName: "7관 (IMAX)",
-                reservedSeats: "E12,E13",
-                ratingAge: "12세 이상",
-                startShowTime: "2025-06-05 19:30",
-                totalAmount: "28,000",
-                reservationCode: ticketNumber
-            };
-            
-            setTicketData(data);
+
+            const res = await fetch(`${process.env.REACT_APP_API_SERVER}/reservation/movie/info?reservationCode=${ticketNumber}`);
+
+            if (res.ok) {
+                const data = await res.json();
+                console.log(data);
+                setTicketData(data);
+            }
+
             setShowTicket(true);
         } catch (error) {
             setError("서버 연결에 실패했습니다.");

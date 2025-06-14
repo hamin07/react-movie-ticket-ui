@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { data, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function SeatSelection(props) {
     const location = useLocation();
@@ -23,7 +23,6 @@ export default function SeatSelection(props) {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
     const [loading, setLoading] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-
     const [reqReservedCode, setReqReservedCode] = useState(null);
 
     const paymentMethods = [
@@ -37,10 +36,28 @@ export default function SeatSelection(props) {
     // 총 가격 계산
     const totalPrice = selectedSeats.length * seatPrice;
 
+    // 기본 좌석 레이아웃 생성
+    function generateDefaultLayout() {
+        const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const seatsPerRow = 16;
+        
+        return rows.map(row => {
+            const seats = [];
+            for (let i = 1; i <= seatsPerRow; i++) {
+                seats.push({
+                    id: `${row}${i}`,
+                    number: i,
+                    row: row,
+                    isAvailable: true
+                });
+            }
+            return { row, seats };
+        });
+    }
+
     // seatLayout 문자열을 파싱해서 행/좌석 배열로 변환
     function parseSeatLayout(layoutStr) {
         if (!layoutStr) {
-            // 기본 레이아웃 생성 (테스트용)
             return generateDefaultLayout();
         }
         
@@ -76,9 +93,9 @@ export default function SeatSelection(props) {
         }
     }
 
+    // 예약된 좌석 정보 가져오기
     useEffect(() => {
         async function fetchOccupiedSeats() {
-            // showtimeId 등 필요한 정보는 movieData에서 추출
             const showtimeId = movieData?.showtimeId;
             if (!showtimeId) return;
 
@@ -86,7 +103,6 @@ export default function SeatSelection(props) {
                 const res = await fetch(`${process.env.REACT_APP_API_SERVER}/reservation/seats/occupied?showtimeId=${showtimeId}`);
                 if (res.ok) {
                     const data = await res.json();
-                    console.log(data);
                     setOccupiedSeats(data);
                 }
             } catch (e) {
@@ -96,36 +112,14 @@ export default function SeatSelection(props) {
         fetchOccupiedSeats();
     }, [movieData?.showtimeId]);
 
-    // 기본 좌석 레이아웃 생성 (테스트용)
-    function generateDefaultLayout() {
-        const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
-        const seatsPerRow = 16;
-        
-        return rows.map(row => {
-            const seats = [];
-            for (let i = 1; i <= seatsPerRow; i++) {
-                seats.push({
-                    id: `${row}${i}`,
-                    number: i,
-                    row: row,
-                    isAvailable: true
-                });
-            }
-            return { row, seats };
-        });
-    }
-
-    // occupiedSeats 더미 (이미 예약된 좌석)
+    // 좌석 레이아웃 설정
     useEffect(() => {
         setLoading(true);
-        // 실제 API 연동 시 fetch로 대체
         setTimeout(() => {
-            // 동적으로 seatLayout 생성
             const layout = parseSeatLayout(movieData?.seatLayout);
             setSeatLayout(layout);
             setLoading(false);
         }, 500);
-    // movieData.seatLayout이 바뀌면 다시 생성
     }, [movieData?.seatLayout]);
 
     const toggleSeat = (seatId) => {
@@ -155,7 +149,6 @@ export default function SeatSelection(props) {
             return;
         }
 
-        // 예매 데이터 구성
         const reservationData = {
             userId: JSON.parse(localStorage.getItem("user")).userId,
             movieId: movieData?.movieId,
@@ -180,13 +173,13 @@ export default function SeatSelection(props) {
             });
 
             if (res.ok) {
-                console.log(await res.json());
+                const responseData = await res.text();
                 setShowPaymentModal(false);
+                setReqReservedCode(responseData);
                 setShowSuccessModal(true);
-                // navigate('/');
             } else {
-                const err = await res.json();
-                alert('예매 실패: ' + (err.message || '서버 오류'));
+                const errorText = await res.text();
+                alert('예매 실패: ' + errorText);
             }
         } catch (error) {
             alert('예매 요청 중 오류가 발생했습니다.');
@@ -292,8 +285,8 @@ export default function SeatSelection(props) {
                         <div className="bg-white rounded-lg p-6 mb-6">
                             <div className="space-y-3">
                                 {seatLayout.map(({ row, seats }) => {
-                                    const leftSeats = seats.slice(0, 8); // 왼쪽 8개
-                                    const rightSeats = seats.slice(8); // 오른쪽 나머지
+                                    const leftSeats = seats.slice(0, 8);
+                                    const rightSeats = seats.slice(8);
                                     
                                     return (
                                         <div key={row} className="flex items-center justify-center space-x-2">
@@ -387,7 +380,7 @@ export default function SeatSelection(props) {
                             <span className="text-5xl mb-4 text-green-500">🎉</span>
                             <h2 className="text-2xl font-bold mb-2 text-gray-800">결제가 완료되었습니다!</h2>
                             <p className="text-gray-600 mb-6">예매가 정상적으로 처리되었습니다.</p>
-                            <p className="text-black text-lg my-4">{}</p>
+                            <CopyableText text={reqReservedCode} />
                             <button
                                 onClick={() => {
                                     setShowSuccessModal(false);
@@ -402,5 +395,19 @@ export default function SeatSelection(props) {
                 )}
             </div>
         </div>
+    );
+}
+
+function CopyableText({ text }) {
+    const handleClick = () => {
+        navigator.clipboard.writeText(text)
+            .then(() => alert('예매 코드가 복사되었습니다'))
+            .catch((err) => console.error('복사 실패:', err));
+    };
+
+    return (
+        <p className="text-black text-lg my-4 cursor-pointer" onClick={handleClick}>
+            {text}
+        </p>
     );
 }
