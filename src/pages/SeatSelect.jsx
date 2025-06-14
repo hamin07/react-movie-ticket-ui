@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-
-const API_BASE_URL = process.env.REACT_APP_API_SERVER || 'http://localhost:8080/api';
+import { data, useLocation, useNavigate } from 'react-router-dom';
 
 export default function SeatSelection(props) {
     const location = useLocation();
@@ -24,6 +22,9 @@ export default function SeatSelection(props) {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
     const [loading, setLoading] = useState(true);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    const [reqReservedCode, setReqReservedCode] = useState(null);
 
     const paymentMethods = [
         { id: '신용카드', name: '신용카드', icon: '💳' },
@@ -74,6 +75,26 @@ export default function SeatSelection(props) {
             return generateDefaultLayout();
         }
     }
+
+    useEffect(() => {
+        async function fetchOccupiedSeats() {
+            // showtimeId 등 필요한 정보는 movieData에서 추출
+            const showtimeId = movieData?.showtimeId;
+            if (!showtimeId) return;
+
+            try {
+                const res = await fetch(`${process.env.REACT_APP_API_SERVER}/reservation/seats/occupied?showtimeId=${showtimeId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log(data);
+                    setOccupiedSeats(data);
+                }
+            } catch (e) {
+                console.error('예약된 좌석 불러오기 실패', e);
+            }
+        }
+        fetchOccupiedSeats();
+    }, [movieData?.showtimeId]);
 
     // 기본 좌석 레이아웃 생성 (테스트용)
     function generateDefaultLayout() {
@@ -150,7 +171,7 @@ export default function SeatSelection(props) {
         };
 
         try {
-            const res = await fetch(`${API_BASE_URL}/reservation`, {
+            const res = await fetch(`${process.env.REACT_APP_API_SERVER}/reservation`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,9 +180,9 @@ export default function SeatSelection(props) {
             });
 
             if (res.ok) {
-                alert('결제가 완료되었습니다!');
                 console.log(await res.json());
                 setShowPaymentModal(false);
+                setShowSuccessModal(true);
                 // navigate('/');
             } else {
                 const err = await res.json();
@@ -191,19 +212,16 @@ export default function SeatSelection(props) {
     }
 
     return (
-        <div className="px-8 py-4">
+        <div style={{width: "1100px"}} className="px-8 py-4 mx-auto">
             <h1 className="text-3xl text-center font-bold mb-4">좌석 선택</h1>
-            <div className="max-w-6xl mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 mb-8">
                     {/* 왼쪽: 영화 포스터 및 정보 */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-lg p-6 shadow">
-                            <img src={movieData?.posterImageUrl} alt={movieData?.movieTitle} className="w-full object-cover rounded mb-4" />
+                        <div className="bg-white rounded-lg">
+                            <img src={movieData?.posterImageUrl} alt={movieData?.movieTitle} className="w-[275px] object-cover rounded mb-4" />
                             <div>
                                 <h2 className="text-2xl font-bold mb-2 text-gray-900">{movieData?.movieTitle}</h2>
-                                {movieData?.genre && (
-                                    <p className="text-gray-500 text-md mb-2">{movieData.genre}</p>
-                                )}
                                 {movieData?.startTime && (
                                     <p className="text-lg mb-2">
                                         상영시간: {new Date(movieData.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -211,7 +229,7 @@ export default function SeatSelection(props) {
                                 )}
                                 <p className="text-blue-600 font-semibold mb-2">관람 인원: {peopleCount}명</p>
                                 <p className="text-gray-600 mb-2">좌석당 가격: {seatPrice.toLocaleString()}원</p>
-                                <div className="border-t pt-4 mt-4">
+                                <div className="pt-4 mt-4">
                                     <p className="text-lg font-bold text-red-600">
                                         총 가격: {totalPrice.toLocaleString()}원
                                     </p>
@@ -220,7 +238,7 @@ export default function SeatSelection(props) {
                         </div>
                         
                         {/* 선택된 좌석 정보 */}
-                        <div className="bg-white rounded-lg p-4 mt-4 shadow">
+                        <div className="bg-white rounded-lg w-60 p-4 mt-4">
                             <h3 className="text-lg font-bold mb-3">선택된 좌석</h3>
                             <div className="flex flex-wrap gap-2">
                                 {selectedSeats.length > 0 ? (
@@ -239,7 +257,7 @@ export default function SeatSelection(props) {
                         <div className="mt-4">
                             <button
                                 onClick={handlePaymentButtonClick}
-                                className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-lg"
+                                className="w-[275px] py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-lg"
                             >
                                 {totalPrice.toLocaleString()}원 결제하기
                             </button>
@@ -271,7 +289,7 @@ export default function SeatSelection(props) {
                         </div>
 
                         {/* 좌석 배치 */}
-                        <div className="bg-white rounded-lg p-6 mb-6 shadow">
+                        <div className="bg-white rounded-lg p-6 mb-6">
                             <div className="space-y-3">
                                 {seatLayout.map(({ row, seats }) => {
                                     const leftSeats = seats.slice(0, 8); // 왼쪽 8개
@@ -359,6 +377,26 @@ export default function SeatSelection(props) {
                                     {totalPrice.toLocaleString()}원 결제하기
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {showSuccessModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-8 w-96 flex flex-col items-center">
+                            <span className="text-5xl mb-4 text-green-500">🎉</span>
+                            <h2 className="text-2xl font-bold mb-2 text-gray-800">결제가 완료되었습니다!</h2>
+                            <p className="text-gray-600 mb-6">예매가 정상적으로 처리되었습니다.</p>
+                            <p className="text-black text-lg my-4">{}</p>
+                            <button
+                                onClick={() => {
+                                    setShowSuccessModal(false);
+                                    navigate('/');
+                                }}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition"
+                            >
+                                확인
+                            </button>
                         </div>
                     </div>
                 )}
