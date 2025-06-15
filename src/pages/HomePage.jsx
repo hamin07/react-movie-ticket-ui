@@ -85,7 +85,7 @@ export default function HomePage() {
         return (
             <div className="flex items-center justify-center px-4">
                 <div className="max-w-md w-full">
-                    <div className="bg-white rounded-2xl shadow-xl p-8">
+                    <div className="bg-white rounded-2xl shadow-xl">
                         <div className="text-center mb-8">
                             {/* <div className="text-6xl mb-4">🎫</div> */}
                             <h1 className="text-3xl font-bold text-gray-800 mb-2">로그인</h1>
@@ -138,8 +138,8 @@ export default function HomePage() {
     }
 
     return (
-        <div className="px-8">
-            <div className="max-w-6xl mx-auto py-8">
+        <>
+            <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-4xl font-bold text-gray-800 mb-4">무엇을 하고싶으세요?</h2>
                     <p className="text-lg text-gray-600">원하는 서비스를 선택해 주세요</p>
@@ -177,6 +177,6 @@ export default function HomePage() {
                     </button>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

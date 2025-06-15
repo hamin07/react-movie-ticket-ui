@@ -17,7 +17,7 @@ export default function App() {
                 <header>
                     <Header />      
                 </header>
-                <main className="max-w-5xl mx-auto">
+                <main className="max-w-6xl mx-auto">
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/movie-list" element={<MovieList />} />

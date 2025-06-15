@@ -40,7 +40,7 @@ export default function Header() {
     const isHomePage = location.pathname === "/";
 
     return (
-        <div className="md:flex justify-between items-center p-4 ">
+        <div className="md:flex justify-between items-center px-4 pt-4">
             <div className="flex items-center space-x-6">
                 <div className="flex items-center space-x-3">
                     {!isHomePage && (

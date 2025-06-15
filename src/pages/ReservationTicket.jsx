@@ -39,7 +39,7 @@ export default function ReservationTicket() {
 
             setShowTicket(true);
         } catch (error) {
-            setError("서버 연결에 실패했습니다.");
+            setError("서버 연결에 실패했거나 없는 예매 번호입니다.");
         } finally {
             setLoading(false);
         }
@@ -63,12 +63,6 @@ export default function ReservationTicket() {
         setTicketNumber("");
         setError("");
         setTicketData(null);
-    };
-
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleSearch();
-        }
     };
 
     const keypadLayout = [
@@ -102,7 +96,6 @@ export default function ReservationTicket() {
         return dateString.substring(11, 16);
     };
 
-    // 실제 API 데이터가 없을 때 보여줄 기본 데이터
     const displayData = ticketData || {
         movieTitle: "아바타: 물의 길",
         movieTitleEn: "Avatar: The Way of Water",
@@ -115,17 +108,40 @@ export default function ReservationTicket() {
         reservationCode: ticketNumber
     };
 
+    // 관람 연령 배지 색상 설정 함수
+    function getRatingBadgeStyle(ratingAge) {
+        switch (ratingAge) {
+            case '전체관람가':
+            case 'ALL':
+                return 'bg-green-600 text-white';
+            case '12':
+            case '12세 이상 관람가':
+                return 'bg-yellow-400 text-white';
+            case '15':
+            case '15세 이상 관람가':
+                return 'bg-orange-500 text-white';
+            case '18':
+            case '청소년 관람불가':
+            case '18세':
+                return 'bg-red-600 text-white';
+            default:
+                return 'bg-gray-400 text-white';
+        }
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 px-4 py-8">
+        <div className="px-4">
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-4">
-                        예매티켓조회
-                    </h1>
-                    <p className="text-lg text-gray-600">
-                        예매하신 티켓 번호를 입력하여 조회하세요
-                    </p>
-                </div>
+                {!showTicket && (
+                    <div className="text-center mb-12">
+                        <h1 className="text-4xl font-bold text-gray-800 mb-4">
+                            예매티켓조회
+                        </h1>
+                        <p className="text-lg text-gray-600">
+                            예매하신 티켓 번호를 입력하여 조회하세요
+                        </p>
+                    </div>
+                )}
 
                 {!showTicket ? (
                     <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
@@ -138,7 +154,6 @@ export default function ReservationTicket() {
                                     setError("");
                                     setTicketNumber(e.target.value);
                                 }}
-                                onKeyPress={handleKeyPress}
                                 placeholder="0607-1234-5678-910"
                                 className="w-full text-xl font-mono bg-gray-50 border-2 border-gray-200 rounded-lg p-4 text-center focus:border-red-500 focus:outline-none transition-colors"
                                 maxLength={17}
@@ -186,106 +201,96 @@ export default function ReservationTicket() {
                 ) : (
                     <div className="max-w-4xl mx-auto">
                         <div className="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
-                            {/* 헤더 */}
+
                             <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6">
                                 <div className="flex justify-between items-center">
                                     <h2 className="text-2xl font-bold">CGV</h2>
                                     <div className="text-right">
-                                        <span className="text-sm opacity-90">MOVIE TICKET</span>
-                                        <div className="text-xs opacity-75 mt-1">Mobile Ticket</div>
+                                        <span className="text-sx font-bold opacity-90">MOVIE TICKET</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 메인 콘텐츠 */}
                             <div className="p-8">
-                                {/* 영화 정보 섹션 */}
-                                <div className="flex flex-col md:flex-row gap-6 mb-8">
-                                    {/* 포스터 이미지 */}
-                                    <div className="flex-shrink-0 mx-auto md:mx-0">
+                                <div className="flex gap-6 mb-8">
+                                    <div className="flex-shrink-0 mx-auto md:mx-0 relative">
+                                        <div
+                                            className={`absolute top-2 right-2 px-2.5 py-1 rounded text-lg font-bold shadow-md ${getRatingBadgeStyle(displayData.ratingAge)}`}
+                                        >
+                                            {String(displayData.ratingAge).substring(0, 2) == "청소" ? "18" : String(displayData.ratingAge).substring(0, 2)}
+                                        </div>
                                         <img 
                                             src={displayData.reservationMoviePosterUrl} 
                                             alt={displayData.movieTitle}
-                                            className="w-32 h-48 md:w-40 md:h-60 object-cover rounded-lg shadow-md"
+                                            className="w-64 object-cover rounded-lg shadow-md"
                                         />
                                     </div>
                                     
-                                    {/* 영화 제목 및 기본 정보 */}
-                                    <div className="flex-1 text-center md:text-left">
-                                        <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                                            {displayData.movieTitle}
-                                        </h3>
-                                        {displayData.movieTitleEn && (
-                                            <p className="text-gray-500 text-lg mb-4">
-                                                {displayData.movieTitleEn}
-                                            </p>
-                                        )}
-                                        <div className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                                            {displayData.ratingAge}
+                                    <div>
+                                        <div className="text-center md:text-left">
+                                            <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+                                                {displayData.movieTitle}
+                                            </h3>
                                         </div>
-                                    </div>
-                                </div>
-                                
-                                {/* 예매 정보 그리드 */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                    <div className="space-y-4">
-                                        <div className="bg-gray-50 rounded-lg p-4">
-                                            <h4 className="font-semibold text-gray-700 mb-3 text-center">상영 정보</h4>
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600">극장</span>
-                                                    <span className="font-semibold text-gray-800">CGV 강남점</span>
+
+                                        <div className="flex gap-4 my-4">
+                                            <div className="w-64 space-y-4">
+                                                <div className="bg-gray-100 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-gray-700 mb-3 text-center">상영 정보</h4>
+                                                    <div className="space-y-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-600">극장</span>
+                                                            <span className="font-semibold text-gray-800">CGV 강남점</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-600">상영관</span>
+                                                            <span className="font-semibold text-gray-800">{displayData.cinemaName}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-600">좌석</span>
+                                                            <span className="font-semibold text-gray-800 w-[170px]">{seatFormatter(displayData.reservedSeats)}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600">상영관</span>
-                                                    <span className="font-semibold text-gray-800">{displayData.cinemaName}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600">좌석</span>
-                                                    <span className="font-semibold text-gray-800">{seatFormatter(displayData.reservedSeats)}</span>
+                                            </div>
+
+                                            <div className="w-64 space-y-4">
+                                                <div className="bg-gray-100 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-gray-700 mb-3 text-center">예매 정보</h4>
+                                                    <div className="space-y-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-600">관람일</span>
+                                                            <span className="font-semibold text-gray-800">{formatDate(displayData.startShowTime)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-600">상영시간</span>
+                                                            <span className="font-semibold text-gray-800">{formatTime(displayData.startShowTime)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-600">관람료</span>
+                                                            <span className="font-semibold text-red-600 text-lg">{parseInt(displayData.totalAmount).toLocaleString()}원</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div className="space-y-4">
-                                        <div className="bg-gray-50 rounded-lg p-4">
-                                            <h4 className="font-semibold text-gray-700 mb-3 text-center">예매 정보</h4>
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600">관람일</span>
-                                                    <span className="font-semibold text-gray-800">{formatDate(displayData.startShowTime)}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600">상영시간</span>
-                                                    <span className="font-semibold text-gray-800">{formatTime(displayData.startShowTime)}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600">관람료</span>
-                                                    <span className="font-semibold text-red-600 text-lg">{displayData.totalAmount}원</span>
+
+                                        <div className="bg-gradient-to-r from-gray-100 to-gray-100 rounded-lg p-4 mb-6">
+                                            <div className="text-center">
+                                                <span className="text-gray-600 text-sm">예매번호</span>
+                                                <div className="font-mono font-bold text-xl text-gray-800 mt-1">
+                                                    {displayData.reservationCode || ticketNumber}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* 예매번호 섹션 */}
-                                <div className="bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg p-4 mb-6">
-                                    <div className="text-center">
-                                        <span className="text-gray-600 text-sm">예매번호</span>
-                                        <div className="font-mono font-bold text-xl text-gray-800 mt-1">
-                                            {displayData.reservationCode || ticketNumber}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 점선 구분선 */}
                                 <div className="my-6 border-t-2 border-dashed border-gray-300 relative">
                                     <div className="absolute -left-4 -top-3 w-6 h-6 bg-gray-50 rounded-full"></div>
                                     <div className="absolute -right-4 -top-3 w-6 h-6 bg-gray-50 rounded-full"></div>
                                 </div>
 
-                                {/* 안내사항 */}
                                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                                     <div className="text-center text-sm text-gray-700 space-y-2">
                                         <p className="font-semibold text-yellow-800 flex items-center justify-center">
@@ -302,7 +307,6 @@ export default function ReservationTicket() {
                             </div>
                         </div>
 
-                        {/* 액션 버튼 */}
                         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                             <button 
                                 onClick={handleReset}
@@ -317,7 +321,6 @@ export default function ReservationTicket() {
                     </div>
                 )}
 
-                {/* 하단 장식 */}
                 <div className="mt-16 text-center">
                     <div className="inline-flex items-center space-x-4 text-gray-500">
                         <div className="w-12 h-px bg-gray-300"></div>

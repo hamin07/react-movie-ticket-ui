@@ -71,8 +71,8 @@ export default function MovieList() {
     }
 
     return (
-        <div className="px-8 py-4">
-            <h1 className="text-4xl font-semibold text-center mb-4">티켓구매</h1>
+        <div className="px-8">
+            <h1 className="text-4xl font-semibold text-center mb-8">티켓구매</h1>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {movies.map((movie) => (
